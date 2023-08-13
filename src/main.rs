@@ -18,20 +18,29 @@ fn main() {
     graph(args.start, args.end, args.output_file).unwrap();
 }
 
+fn generate_data_set(start: usize, end: usize) -> Vec<Vec<usize>> {
+    (start..end).map(|x| collatz_run(x)).collect()
+}
+
+fn max_height(data_set: &Vec<Vec<usize>>) -> usize {
+    *data_set
+        .iter()
+        .map(|data| data.iter().max().unwrap())
+        .max()
+        .unwrap()
+}
+
+fn max_iterations(data_set: &Vec<Vec<usize>>) -> usize {
+    data_set.iter().map(|data| data.len()).max().unwrap()
+}
 fn graph(start: usize, end: usize, file_name: String) -> Result<(), Box<dyn Error>> {
+    let data_set = generate_data_set(start, end);
     let root = BitMapBackend::new(&file_name, (1024, 768)).into_drawing_area();
 
     root.fill(&WHITE)?;
 
-    let data_set: Vec<(usize, Vec<usize>)> = (start..end).map(|x| (x, collatz_run(x))).collect();
-
-    let max_height = data_set
-        .iter()
-        .map(|(_, data)| data.iter().max().unwrap())
-        .max()
-        .unwrap();
-
-    let max_iterations = data_set.iter().map(|(_, data)| data.len()).max().unwrap();
+    let max_height = max_height(&data_set);
+    let max_iterations = max_iterations(&data_set);
     let mut chart = ChartBuilder::on(&root)
         .caption(
             &format!("Collatz sequence for {} to {}", start, end),
@@ -39,9 +48,9 @@ fn graph(start: usize, end: usize, file_name: String) -> Result<(), Box<dyn Erro
         )
         .set_label_area_size(LabelAreaPosition::Left, 100)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
-        .build_cartesian_2d(0..max_iterations, 0..*max_height)?;
+        .build_cartesian_2d(0..max_iterations, 0..max_height)?;
 
-    for (i, data) in data_set {
+    for (i, data) in data_set.into_iter().enumerate() {
         let line_data = LineSeries::new(data.into_iter().enumerate(), &Palette9999::pick(i));
         chart.draw_series(line_data)?;
     }

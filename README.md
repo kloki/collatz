@@ -3,5 +3,6 @@
 ```
 cargo build --release
 ./target/release/collatz --help
-./target/release/collatz collatz 989345275647 --width=300 --height=120
+./target/release/collatz 0 10000
+display ./output.png
 ```
