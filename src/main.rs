@@ -9,13 +9,24 @@ struct Args {
     start: usize,
     /// End value
     end: usize,
-    ///
     #[arg(short, long, default_value = "./output.png")]
     output_file: String,
+
+    #[arg(long, default_value_t = 1000)]
+    width: u32,
+    #[arg(long, default_value_t = 1500)]
+    height: u32,
 }
 fn main() {
     let args = Args::parse();
-    graph(args.start, args.end, args.output_file).unwrap();
+    graph(
+        args.start,
+        args.end,
+        args.width,
+        args.height,
+        args.output_file,
+    )
+    .unwrap();
 }
 
 fn generate_data_set(start: usize, end: usize) -> Vec<Vec<usize>> {
@@ -34,8 +45,14 @@ fn max_iterations(data_set: &Vec<Vec<usize>>) -> usize {
     data_set.iter().map(|data| data.len()).max().unwrap()
 }
 
-fn graph(start: usize, end: usize, file_name: String) -> Result<(), Box<dyn Error>> {
-    let root = BitMapBackend::new(&file_name, (1000, 1500)).into_drawing_area();
+fn graph(
+    start: usize,
+    end: usize,
+    width: u32,
+    height: u32,
+    file_name: String,
+) -> Result<(), Box<dyn Error>> {
+    let root = BitMapBackend::new(&file_name, (width, height)).into_drawing_area();
     root.fill(&WHITE)?;
     let frames = root.split_evenly((3, 1));
 
@@ -142,6 +159,6 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        graph(0, 1000, "test.png".to_string()).unwrap();
+        graph(0, 1000, 1000, 1500, "test.png".to_string()).unwrap();
     }
 }
