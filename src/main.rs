@@ -1,4 +1,5 @@
 use clap::Parser;
+use plotters::coord::Shift;
 use plotters::prelude::*;
 use std::{error::Error, vec};
 /// Graph collatz.
@@ -11,7 +12,6 @@ struct Args {
     end: usize,
     #[arg(short, long, default_value = "./output.png")]
     output_file: String,
-
     #[arg(long, default_value_t = 1000)]
     width: u32,
     #[arg(long, default_value_t = 1500)]
@@ -33,6 +33,21 @@ fn generate_data_set(start: usize, end: usize) -> Vec<Vec<usize>> {
     (start..end).map(|x| collatz_run(x)).collect()
 }
 
+fn collatz_run(mut input: usize) -> Vec<usize> {
+    let mut output = vec![input];
+    while input > 1 {
+        input = collatz(input);
+        output.push(input);
+    }
+    output
+}
+
+fn collatz(input: usize) -> usize {
+    match input {
+        x if x % 2 == 0 => x / 2,
+        x => x * 3 + 1,
+    }
+}
 fn max_height(data_set: &Vec<Vec<usize>>) -> usize {
     *data_set
         .iter()
@@ -45,22 +60,14 @@ fn max_iterations(data_set: &Vec<Vec<usize>>) -> usize {
     data_set.iter().map(|data| data.len()).max().unwrap()
 }
 
-fn graph(
+fn graph_iterations(
     start: usize,
     end: usize,
-    width: u32,
-    height: u32,
-    file_name: String,
+    max_height: usize,
+    data_set: &Vec<Vec<usize>>,
+    frame: &DrawingArea<plotters::prelude::BitMapBackend<'_>, Shift>,
 ) -> Result<(), Box<dyn Error>> {
-    let root = BitMapBackend::new(&file_name, (width, height)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let frames = root.split_evenly((3, 1));
-
-    let data_set = generate_data_set(start, end);
-    let max_height = max_height(&data_set);
-    let max_iterations = max_iterations(&data_set);
-    //bottom
-    let mut chart = ChartBuilder::on(&frames[2])
+    let mut chart = ChartBuilder::on(frame)
         .caption(
             &format!("Max Value for {} to {}", start, end),
             ("sans-serif", 20),
@@ -86,8 +93,16 @@ fn graph(
         .y_desc("Value")
         .draw()?;
 
-    //middle
-    let mut chart = ChartBuilder::on(&frames[1])
+    Ok(())
+}
+fn graph_max_values(
+    start: usize,
+    end: usize,
+    max_iterations: usize,
+    data_set: &Vec<Vec<usize>>,
+    frame: &DrawingArea<plotters::prelude::BitMapBackend<'_>, Shift>,
+) -> Result<(), Box<dyn Error>> {
+    let mut chart = ChartBuilder::on(frame)
         .caption(
             &format!("Iterations for {} to {}", start, end),
             ("sans-serif", 20),
@@ -112,9 +127,18 @@ fn graph(
         .x_desc("Start")
         .y_desc("Value")
         .draw()?;
+    Ok(())
+}
 
-    //upper
-    let mut chart = ChartBuilder::on(&frames[0])
+fn graph_runs(
+    start: usize,
+    end: usize,
+    max_iterations: usize,
+    max_height: usize,
+    data_set: Vec<Vec<usize>>,
+    frame: &DrawingArea<plotters::prelude::BitMapBackend<'_>, Shift>,
+) -> Result<(), Box<dyn Error>> {
+    let mut chart = ChartBuilder::on(frame)
         .caption(
             &format!("Collatz sequence for {} to {}", start, end),
             ("sans-serif", 20),
@@ -137,20 +161,28 @@ fn graph(
     Ok(())
 }
 
-fn collatz_run(mut input: usize) -> Vec<usize> {
-    let mut output = vec![input];
-    while input > 1 {
-        input = collatz(input);
-        output.push(input);
-    }
-    output
-}
+fn graph(
+    start: usize,
+    end: usize,
+    width: u32,
+    height: u32,
+    file_name: String,
+) -> Result<(), Box<dyn Error>> {
+    let root = BitMapBackend::new(&file_name, (width, height)).into_drawing_area();
+    root.fill(&WHITE)?;
+    let frames = root.split_evenly((3, 1));
 
-fn collatz(input: usize) -> usize {
-    match input {
-        x if x % 2 == 0 => x / 2,
-        x => x * 3 + 1,
-    }
+    let data_set = generate_data_set(start, end);
+    let max_height = max_height(&data_set);
+    let max_iterations = max_iterations(&data_set);
+    //bottom
+    graph_iterations(start, end, max_height, &data_set, &frames[2])?;
+    //middle
+    graph_max_values(start, end, max_iterations, &data_set, &frames[1])?;
+    //upper
+    graph_runs(start, end, max_iterations, max_height, data_set, &frames[0])?;
+
+    Ok(())
 }
 
 #[cfg(test)]
