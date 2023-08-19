@@ -1,6 +1,7 @@
 # collatz generator
 
 https://en.wikipedia.org/wiki/Collatz_conjecture
+
 ![Example](./example.png)
 
 ```
