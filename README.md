@@ -1,5 +1,8 @@
 # collatz generator
 
+https://en.wikipedia.org/wiki/Collatz_conjecture
+![Example](./example.png)
+
 ```
 cargo build --release
 ./target/release/collatz --help
